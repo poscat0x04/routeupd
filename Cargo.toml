@@ -1,0 +1,26 @@
+[package]
+name = "routeupd"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rtnetlink = "0.11"
+ipnet = "2.7"
+nom = "7.1"
+reqwest = "0.11"
+anyhow = "1.0"
+clap.version = "4.0"
+clap.features = [ "derive" ]
+tokio.version = "1.23"
+tokio.features = [ "macros", "rt-multi-thread" ]
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+opt-level = 'z'
+lto = true
+strip = true
+panic = "abort"
