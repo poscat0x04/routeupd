@@ -1,119 +1,43 @@
-pub use nom::{IResult, Err};
-use nom::multi::many0;
-use nom::sequence::tuple;
-use nom::bytes::complete::{take_while, take_till};
-use nom::character::complete::char;
-use nom::branch::alt;
+use std::str::FromStr;
 
-pub use std::net::{Ipv4Addr, Ipv6Addr};
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct Ipv4Net {
-    pub addr: Ipv4Addr,
-    pub prefix: u8,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct Ipv6Net {
-    pub addr: Ipv6Addr,
-    pub prefix: u8,
-}
-
-pub type Res<'a, T> = IResult<&'a str, T, ()>;
-
-fn ip_prefix(max: u8, input: &str) -> Res<u8> {
-    todo!()
-}
-
-fn ipv4_segment(input: &str) -> Res<u8> {
-    todo!()
-}
-
-fn ipv6_segment(input: &str) -> Res<u8> {
-    todo!()
-}
-
-fn single_ipv4_addr(input: &str) -> Res<Ipv4Net> {
-    let (input, ()) = lex_ws(input)?;
-    let (input, (a, _, b, _, c, _, d, _, prefix)) = tuple((
-        ipv4_segment,
-        char('.'),
-        ipv4_segment,
-        char('.'),
-        ipv4_segment,
-        char('.'),
-        ipv4_segment,
-        char('/'),
-        |i| ip_prefix(32, i),
-    ))(input)?;
-    Ok((input, Ipv4Net{
-        addr: Ipv4Addr::new(a, b, c, d),
-        prefix
-    }))
-}
-
-fn single_ipv6_addr(input: &str) -> Res<Ipv6Net> {
-    todo!()
-}
-
-pub fn many_ip_addr(input: &str) -> Res<Vec<Ipv4Net>> {
-    many0(single_ipv4_addr)(input)
-}
-
-pub fn lex_ws(input: &str) -> Res<()> {
-    let (input, _) = many0(alt((
-        comment,
-        lex_space
-    )))(input)?;
-    Ok((input, ()))
-}
-
-pub fn lex_space(input: &str) -> Res<()> {
-    let (input, _) = take_while(|c: char| c.is_whitespace())(input)?;
-    Ok((input, ()))
-}
-
-pub fn comment(input: &str) -> Res<()> {
-    let (input, _) = tuple((
-        char('#'),
-        take_till(|c| c == '\n'),
-        char('\n'),
-    ))(input)?;
-    Ok((input, ()))
-}
-
-pub fn file(input: &str) -> Res<Vec<Ipv4Net>> {
-    let (input, (v, _)) = tuple((
-       many_ip_addr,
-       lex_ws
-    ))(input)?;
-    Ok((input, v))
+fn read_lines<T: FromStr>(f: &str) -> impl Iterator<Item = T> + '_
+{
+    f
+        .lines()
+        .map(|l| T::from_str(l.trim()))
+        .filter_map(|i| i.ok())
 }
 
 #[cfg(test)]
 mod test {
-    use crate::parser::*;
+    use std::str::FromStr;
+    use ipnet::{Ipv4Net, Ipv6Net};
+
+    use crate::parser::read_lines;
 
     #[test]
-    fn parse_comment() {
+    fn test_parse_ipv4() {
+        const TEST_FILE: &str = r#"
+            1.1.1.1/32
+            2.2.3.4/8
+            3.4.5.6/32
+        "#;
+        let mut it = read_lines::<Ipv4Net>(TEST_FILE);
+        assert_eq!(it.next(), Ipv4Net::from_str("1.1.1.1/32").ok());
+        assert_eq!(it.next(), Ipv4Net::from_str("2.2.3.4/8").ok());
+        assert_eq!(it.next(), Ipv4Net::from_str("3.4.5.6/32").ok());
+        assert_eq!(it.next(), None);
     }
 
     #[test]
-    fn parse_multiline_whitespace() {
-    }
-
-    #[test]
-    fn parse_ipv4_cidr() {
-        assert_eq!(
-            single_ipv4_addr("1.1.1.0/24"),
-            Ok(("",Ipv4Net{
-                addr: Ipv4Addr::new(1,1,1,0),
-                prefix: 24
-            }))
-        );
-    }
-
-    #[test]
-    fn parse_ipv6_cidr() {
+    fn test_parse_ipv6() {
+        const TEST_FILE: &str = r#"
+            2001:cc0::/32
+            2001:df1:2b40::/48
+        "#;
+        let mut it = read_lines::<Ipv6Net>(TEST_FILE);
+        assert_eq!(it.next(), Ipv6Net::from_str("2001:cc0:0::/32").ok());
+        assert_eq!(it.next(), Ipv6Net::from_str("2001:df1:2b40::/48").ok());
+        assert_eq!(it.next(), None);
     }
 }
