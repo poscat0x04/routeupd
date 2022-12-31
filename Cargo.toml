@@ -8,12 +8,16 @@ edition = "2021"
 [dependencies]
 rtnetlink = "0.11"
 ipnet = "2.7"
-reqwest = "0.11"
+reqwest.version = "0.11"
+reqwest.features = [ "gzip" ]
+url = "2.3.1"
+nix = "0.26.1"
+futures-util = "0.3.25"
 anyhow = "1.0"
 clap.version = "4.0"
 clap.features = [ "derive" ]
 tokio.version = "1.23"
-tokio.features = [ "macros", "rt-multi-thread" ]
+tokio.features = [ "time", "macros", "rt-multi-thread" ]
 
 [profile.dev]
 opt-level = 1

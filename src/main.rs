@@ -1,15 +1,168 @@
 mod parser;
 mod cli;
+mod url;
 
+use std::time::Duration;
+use std::collections::HashMap;
+use std::future::ready;
+
+use anyhow::{Result, Context, anyhow};
+use futures_util::stream::iter;
+use futures_util::{StreamExt, TryStreamExt};
+use ipnet::{Ipv4Net, Ipv6Net};
+use nix::libc::RT_TABLE_COMPAT;
+use reqwest::{ClientBuilder, Url};
 use rtnetlink::{new_connection, Handle};
-use anyhow::{Result, Context};
-use cli::*;
+use nix::unistd::geteuid;
+use rtnetlink::IpVersion::{V4, V6};
+use rtnetlink::packet::RouteHeader;
+
+use cli::{Arg, Parser};
+use parser::read_lines;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // check if this program have root privilege
+    // immediately exits if does not
+    if !geteuid().is_root() {
+        eprintln!("routeupd needs root privilege to use netlink to modify routing tables!");
+        return Err(anyhow!("Not enough privilege"))
+    }
+
+    // parse arguments
     let arg = Arg::parse();
-    let (conn, handle, _) = new_connection().context("")?;
+
+    // establish netlink connection
+    let (conn, handle, _) =
+        new_connection()
+            .context("Failed to establish a netlink connection")?;
     tokio::spawn(conn);
+
+    // get the interface id
+    let interface =
+        handle.link()
+            .get()
+            .match_name(arg.interface.clone())
+            .execute()
+            .try_next().await
+            .with_context(||
+                format!("Failed to get the id of the interface with the name {}", arg.interface)
+            )?
+            .with_context(||
+                format!("No interface with the name {} was found", arg.interface)
+            )?;
+    let if_id = interface.header.index;
+
+    // setup the reqwest client
+    let client =
+        ClientBuilder::new()
+            .gzip(true)
+            .timeout(Duration::from_secs(10))
+            .connect_timeout(Duration::from_secs(10))
+            .build()
+            .context("Failed to build reqwest client")?;
+
+    // fetch IPv4 networks
+    let v4_req =
+        client
+            .get(arg.v4_url)
+            .build()
+            .context("Failed to build the request to fetch IPv4 CIDRs")?;
+    let v4_resp =
+        client
+            .execute(v4_req).await
+            .and_then(|r| r.error_for_status())
+            .context("Request to fetch IPv4 CIDRs failed")?
+            .text().await
+            .context("Failed to get the IPv4 response body")?;
+    let v4_nets = read_lines::<Ipv4Net>(&v4_resp);
+
+    // get existing routes in the table
+    let mut routes =
+        handle.route()
+            .get(V4)
+            .execute()
+            .try_filter(|x| ready(x.header.table == arg.table));
+
+    // delete existing routes
+    routes.try_for_each_concurrent(
+        10,
+        |r| handle.route().del(r).execute()
+    ).await.context("Failed to delete route")?;
+
+    let mut v4_count = 0u64;
+
+    // add the routes
+    iter(v4_nets)
+        .map(Ok)
+        .try_for_each_concurrent(
+            10,
+            |n| {
+                v4_count += 1;
+                handle.route()
+                    .add()
+                    .v4()
+                    .table(arg.table)
+                    .output_interface(if_id)
+                    .source_prefix(n.addr(), n.prefix_len())
+                    .execute()
+            }
+        ).await
+        .context("Failed to add route")?;
+
+    if !arg.no_v6 {
+        // fetch IPv6 networks
+        let v6_req =
+            client
+                .get(arg.v6_url)
+                .build()
+                .context("Failed to build the request to fetch IPv6 CIDRs")?;
+        let v6_resp =
+            client
+                .execute(v6_req).await
+                .and_then(|r| r.error_for_status())
+                .context("Request to fetch IPv6 CIDRs failed")?
+                .text().await
+                .context("Failed to get the IPv6 response body")?;
+        let v6_nets = read_lines::<Ipv6Net>(&v6_resp);
+
+        // get existing routes in the table
+        let mut routes =
+            handle.route()
+                .get(V6)
+                .execute()
+                .try_filter(|x| ready(x.header.table == arg.table));
+
+        // delete existing routes
+        routes.try_for_each_concurrent(
+            10,
+            |r| handle.route().del(r).execute()
+        ).await.context("Failed to delete route")?;
+
+        let mut v6_count = 0u64;
+
+        // add the routes
+        iter(v6_nets)
+            .map(Ok)
+            .try_for_each_concurrent(
+                10,
+                |n| {
+                    v6_count += 1;
+                    handle.route()
+                        .add()
+                        .v6()
+                        .table(arg.table)
+                        .output_interface(if_id)
+                        .source_prefix(n.addr(), n.prefix_len())
+                        .execute()
+                }
+            ).await
+            .context("Failed to add route")?;
+
+        println!("Successfully added {v4_count} IPv4 routes and {v6_count} IPv6 routes.");
+    } else {
+        println!("Successfully added {v4_count} IPv4 routes.");
+    }
 
     Ok(())
 }

@@ -15,5 +15,5 @@ pub struct Arg {
     #[arg(short = 'i', long = "interface")]
     pub interface: String,
     #[arg(short = 't', long = "table")]
-    pub table: u64
+    pub table: u8
 }

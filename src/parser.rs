@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-fn read_lines<T: FromStr>(f: &str) -> impl Iterator<Item = T> + '_
+pub fn read_lines<T: FromStr>(f: &str) -> impl Iterator<Item = T> + '_
 {
     f
         .lines()
