@@ -138,7 +138,7 @@ async fn update_routes(
                     .v4()
                     .table(arg.table)
                     .output_interface(if_id)
-                    .source_prefix(n.addr(), n.prefix_len())
+                    .destination_prefix(n.addr(), n.prefix_len())
                     .execute()
             }
         ).await
@@ -187,7 +187,7 @@ async fn update_routes(
                         .v6()
                         .table(arg.table)
                         .output_interface(if_id)
-                        .source_prefix(n.addr(), n.prefix_len())
+                        .destination_prefix(n.addr(), n.prefix_len())
                         .execute()
                 }
             ).await
