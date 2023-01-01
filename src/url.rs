@@ -1,6 +1,6 @@
 use url::{ParseError, Url};
 
-fn parse_url(url: &str) -> Result<Url, ParseError> {
+pub fn parse_url(url: &str) -> Result<Url, ParseError> {
     Url::parse(url).or_else(|_| {
         Url::parse(&("https://".to_owned() + url))
     })

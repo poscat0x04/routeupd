@@ -3,7 +3,6 @@ mod cli;
 mod url;
 
 use std::time::Duration;
-use std::collections::HashMap;
 use std::env;
 use std::future::ready;
 
@@ -11,17 +10,16 @@ use anyhow::{Result, Context, anyhow};
 use futures_util::stream::iter;
 use futures_util::{StreamExt, TryStreamExt};
 use ipnet::{Ipv4Net, Ipv6Net};
-use nix::libc::RT_TABLE_COMPAT;
 use reqwest::{Client, ClientBuilder, Url};
 use rtnetlink::{new_connection, Handle};
 use nix::unistd::geteuid;
 use rtnetlink::IpVersion::{V4, V6};
-use rtnetlink::packet::RouteHeader;
 use systemd::daemon::notify;
 use tokio::time::sleep;
 
 use cli::{Arg, Parser};
 use parser::read_lines;
+use crate::url::parse_url;
 
 const UPDATE_INTERVAL: Duration = Duration::from_secs(24 * 60 * 60);
 
@@ -67,25 +65,41 @@ async fn main() -> Result<()> {
             .build()
             .context("Failed to build reqwest client")?;
 
-    update_routes(&client, &handle, &arg, if_id).await?;
+    let v4_url = parse_url(&arg.v4_url).context("Failed to parse URL")?;
+    let v6_url = parse_url(&arg.v6_url).context("Failed to parse URL")?;
+
+    update_routes(
+        &client, &handle, &arg,
+        if_id, &v4_url, &v6_url,
+    ).await?;
     try_notify_systemd()?;
 
     if arg.daemon {
         loop {
             sleep(UPDATE_INTERVAL).await;
-            update_routes(&client, &handle, &arg, if_id).await?
+            update_routes(
+                &client, &handle, &arg,
+                if_id, &v4_url, &v6_url,
+            ).await?
         }
     }
 
     Ok(())
 }
 
-async fn update_routes(client: &Client, handle: &Handle, arg: &Arg, if_id: u32) -> Result<()> {
+async fn update_routes(
+    client: &Client,
+    handle: &Handle,
+    arg: &Arg,
+    if_id: u32,
+    v4_url: &Url,
+    v6_url: &Url,
+) -> Result<()> {
 
     // fetch IPv4 networks
     let v4_req =
         client
-            .get(arg.v4_url.clone())
+            .get(v4_url.clone())
             .build()
             .context("Failed to build the request to fetch IPv4 CIDRs")?;
     let v4_resp =
@@ -98,7 +112,7 @@ async fn update_routes(client: &Client, handle: &Handle, arg: &Arg, if_id: u32) 
     let v4_nets = read_lines::<Ipv4Net>(&v4_resp);
 
     // get existing routes in the table
-    let mut routes =
+    let routes =
         handle.route()
             .get(V4)
             .execute()
@@ -134,7 +148,7 @@ async fn update_routes(client: &Client, handle: &Handle, arg: &Arg, if_id: u32) 
         // fetch IPv6 networks
         let v6_req =
             client
-                .get(arg.v6_url.clone())
+                .get(v6_url.clone())
                 .build()
                 .context("Failed to build the request to fetch IPv6 CIDRs")?;
         let v6_resp =
@@ -147,7 +161,7 @@ async fn update_routes(client: &Client, handle: &Handle, arg: &Arg, if_id: u32) 
         let v6_nets = read_lines::<Ipv6Net>(&v6_resp);
 
         // get existing routes in the table
-        let mut routes =
+        let routes =
             handle.route()
                 .get(V6)
                 .execute()
