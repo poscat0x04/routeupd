@@ -13,10 +13,44 @@
     }:
   flake-utils.eachDefaultSystem (system:
     let
-      pkgs = import nixpkgs { inherit system; };
+      pkgs = import nixpkgs { inherit system; overlays = [ self.overlay ]; };
     in {
       packages = rec {
-        routeupd = with pkgs.rustPlatform; buildRustPackage {
+        inherit (pkgs) routeupd;
+        default = routeupd;
+      };
+    }) // {
+      nixosModules.routeupd =
+        { config, lib, pkgs, ... }:
+        let
+          cfg = config.services.routeupd;
+        in {
+          options.services.routeupd = with lib; {
+            enable = mkEnableOption "routeupd service";
+
+            interface = mkOption {
+              type = types.str;
+            };
+
+            table = mkOption {
+              type = types.int;
+            };
+          };
+
+          config = lib.mkIf cfg.enable {
+            systemd.services.routeupd = {
+              after = [ "network.target" ];
+              wantedBy = [ "multi-user.target" ];
+            };
+
+            serviceConfig = {
+              Type = "notify";
+              ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${cfg.table}";
+            };
+          };
+        };
+      overlay = final: prev: {
+        routeupd = with final.rustPlatform; buildRustPackage {
           pname = "routeupd";
           version = "0.1.0";
 
@@ -30,11 +64,9 @@
           };
           cargoLock.lockFile = ./Cargo.lock;
 
-          nativeBuildInputs = [ pkgs.pkg-config ];
-          buildInputs = [ pkgs.openssl pkgs.systemd.dev ];
+          nativeBuildInputs = [ final.pkg-config ];
+          buildInputs = [ final.openssl final.systemd.dev ];
         };
-        default = routeupd;
       };
-    }
-  );
+    };
 }
