@@ -12,6 +12,8 @@ pub struct Arg {
     pub v6_url: String,
     #[arg(long = "no-v6", default_value_t = false)]
     pub no_v6: bool,
+    #[arg(short, long = "daemon", default_value_t = false)]
+    pub daemon: bool,
     #[arg(short = 'i', long = "interface")]
     pub interface: String,
     #[arg(short = 't', long = "table")]
