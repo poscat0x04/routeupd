@@ -41,11 +41,10 @@
             systemd.services.routeupd = {
               after = [ "network.target" ];
               wantedBy = [ "multi-user.target" ];
-            };
-
-            serviceConfig = {
-              Type = "notify";
-              ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${builtins.toString cfg.table}";
+              serviceConfig = {
+                Type = "notify";
+                ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${builtins.toString cfg.table}";
+              };
             };
           };
         };
