@@ -45,7 +45,7 @@
 
             serviceConfig = {
               Type = "notify";
-              ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${cfg.table}";
+              ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${builtins.toString cfg.table}";
             };
           };
         };
