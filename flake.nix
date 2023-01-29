@@ -24,6 +24,8 @@
         { config, lib, pkgs, ... }:
         let
           cfg = config.services.routeupd;
+          hasDep = !(builtins.isNull cfg.dependency);
+          depUnit = lib.optional hasDep cfg.dependency;
         in {
           options.services.routeupd = with lib; {
             enable = mkEnableOption "routeupd service";
@@ -35,12 +37,18 @@
             table = mkOption {
               type = types.int;
             };
+
+            dependency = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+            };
           };
 
           config = lib.mkIf cfg.enable {
             systemd.services.routeupd = {
-              after = [ "network.target" ];
+              after = [ "network-online.target" ] ++ depUnit;
               wantedBy = [ "multi-user.target" ];
+              bindsTo = depUnit;
               serviceConfig = {
                 Type = "notify";
                 ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${builtins.toString cfg.table}";
