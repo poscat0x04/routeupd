@@ -46,7 +46,7 @@
 
           config = lib.mkIf cfg.enable {
             systemd.services.routeupd = {
-              after = [ "network-online.target" ] ++ depUnit;
+              after = [ "network-online.target" "nss-lookup.target" ] ++ depUnit;
               wantedBy = [ "multi-user.target" ];
               bindsTo = depUnit;
               serviceConfig = {
