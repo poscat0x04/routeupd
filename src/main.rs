@@ -10,6 +10,7 @@ use anyhow::{Result, Context, anyhow};
 use futures_util::stream::iter;
 use futures_util::{StreamExt, TryStreamExt};
 use ipnet::{Ipv4Net, Ipv6Net};
+use parse_duration::parse::parse;
 use reqwest::{Client, ClientBuilder, Url};
 use rtnetlink::{new_connection, Handle};
 use nix::unistd::geteuid;
@@ -21,7 +22,7 @@ use cli::{Arg, Parser};
 use parser::read_lines;
 use crate::url::parse_url;
 
-const UPDATE_INTERVAL: Duration = Duration::from_secs(24 * 60 * 60);
+const UPDATE_INTERVAL_DEFAULT: Duration = Duration::from_secs(24 * 60 * 60);
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -34,6 +35,12 @@ async fn main() -> Result<()> {
 
     // parse arguments
     let arg = Arg::parse();
+
+    // parse interval string, if supplied
+    let update_interval = match &arg.interval {
+        Some(i) => parse(i).with_context(|| format!("Failed to parse interval \"{}\"", i))?,
+        None => UPDATE_INTERVAL_DEFAULT,
+    };
 
     // establish netlink connection
     let (conn, handle, _) =
@@ -76,7 +83,7 @@ async fn main() -> Result<()> {
 
     if arg.daemon {
         loop {
-            sleep(UPDATE_INTERVAL).await;
+            sleep(update_interval).await;
             update_routes(
                 &client, &handle, &arg,
                 if_id, &v4_url, &v6_url,

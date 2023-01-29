@@ -44,5 +44,10 @@ pub struct Arg {
         long = "table",
         help = "The id of the routing table to add routes to, should be exclusively managed by routeupd"
     )]
-    pub table: u8
+    pub table: u8,
+    #[arg(
+        long = "interval",
+        help = "The interval between update, defaults to 1 day, uses systemd.time(7) syntax"
+    )]
+    pub interval: Option<String>,
 }
