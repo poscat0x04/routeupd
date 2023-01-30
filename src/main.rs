@@ -6,14 +6,14 @@ use std::time::Duration;
 use std::env;
 use std::future::ready;
 
-use anyhow::{Result, Context, anyhow};
+use anyhow::{Result, Context, bail};
+use capctl::caps::{Cap, CapState};
 use futures_util::stream::iter;
 use futures_util::{StreamExt, TryStreamExt};
 use ipnet::{Ipv4Net, Ipv6Net};
 use parse_duration::parse::parse;
 use reqwest::{Client, ClientBuilder, Url};
 use rtnetlink::{new_connection, Handle};
-use nix::unistd::geteuid;
 use rtnetlink::IpVersion::{V4, V6};
 use systemd::daemon::notify;
 use tokio::time::sleep;
@@ -26,13 +26,6 @@ const UPDATE_INTERVAL_DEFAULT: Duration = Duration::from_secs(24 * 60 * 60);
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // check if this program have root privilege
-    // immediately exits if does not
-    if !geteuid().is_root() {
-        eprintln!("routeupd needs root privilege to use netlink to modify routing tables!");
-        return Err(anyhow!("Not enough privilege"))
-    }
-
     // parse arguments
     let arg = Arg::parse();
 
@@ -41,6 +34,15 @@ async fn main() -> Result<()> {
         Some(i) => parse(i).with_context(|| format!("Failed to parse interval \"{}\"", i))?,
         None => UPDATE_INTERVAL_DEFAULT,
     };
+
+    // check if this program have enough privilege
+    let init_cap_state = CapState::get_current().context("Failed to get process capabilities")?;
+    if !init_cap_state.permitted.has(Cap::NET_ADMIN) {
+        eprintln!("routeupd needs CAP_NET_ADMIN to use rtnetlink to modify routing tables!");
+        eprintln!("consider running this program as root or setting CAP_NET_ADMIN");
+        eprintln!("");
+        bail!("Not engough privilege")
+    }
 
     // establish netlink connection
     let (conn, handle, _) =
