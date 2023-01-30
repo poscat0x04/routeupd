@@ -54,6 +54,15 @@
                 User = "routeupd";
                 Group = "routeupd";
                 AmbientCapabilities = [ "CAP_NET_ADMIN" ];
+                CapabilityBoundingSet = [ "CAP_NET_ADMIN" ];
+                ProtectHome = true;
+                ProtectHostname = true;
+                ProtectKernelLogs = true;
+                ProtectKernelModules = true;
+                ProtectKernelTunables = true;
+                RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" "AF_NETLINK" ];
+                RestrictNamespaces = true;
+                Restart = "always";
                 Type = "notify";
                 ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${builtins.toString cfg.table}";
               };
