@@ -50,6 +50,10 @@
               wantedBy = [ "multi-user.target" ];
               bindsTo = depUnit;
               serviceConfig = {
+                DynamicUser = true;
+                User = "routeupd";
+                Group = "routeupd";
+                AmbientCapabilities = [ "CAP_NET_ADMIN" ];
                 Type = "notify";
                 ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${builtins.toString cfg.table}";
               };
