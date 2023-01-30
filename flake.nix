@@ -55,11 +55,15 @@
                 Group = "routeupd";
                 AmbientCapabilities = [ "CAP_NET_ADMIN" ];
                 CapabilityBoundingSet = [ "CAP_NET_ADMIN" ];
+                SystemCallArchitectures = [ "native" ];
+                ProtectClock = true;
+                ProtectControlGroups = true;
                 ProtectHome = true;
                 ProtectHostname = true;
                 ProtectKernelLogs = true;
                 ProtectKernelModules = true;
                 ProtectKernelTunables = true;
+                ProtectProc = "noaccess";
                 RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" "AF_NETLINK" ];
                 RestrictNamespaces = true;
                 Restart = "always";
