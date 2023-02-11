@@ -24,8 +24,7 @@
         { config, lib, pkgs, ... }:
         let
           cfg = config.services.routeupd;
-          hasDep = !(builtins.isNull cfg.dependency);
-          depUnit = lib.optional hasDep cfg.dependency;
+          devDep = [ "sys-subsystem-net-devices-${cfg.interface}.device" ];
         in {
           options.services.routeupd = with lib; {
             enable = mkEnableOption "routeupd service";
@@ -37,18 +36,13 @@
             table = mkOption {
               type = types.int;
             };
-
-            dependency = mkOption {
-              type = types.nullOr types.str;
-              default = null;
-            };
           };
 
           config = lib.mkIf cfg.enable {
             systemd.services.routeupd = {
-              after = [ "network-online.target" "nss-lookup.target" ] ++ depUnit;
-              wantedBy = [ "multi-user.target" ];
-              bindsTo = depUnit;
+              wantedBy = devDep;
+              after = [ "network-online.target" "nss-lookup.target" ] ++ devDep;
+              bindsTo = devDep;
               serviceConfig = {
                 DynamicUser = true;
                 User = "routeupd";
@@ -67,6 +61,7 @@
                 RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" "AF_NETLINK" ];
                 RestrictNamespaces = true;
                 Restart = "always";
+                RestartSec = "3s";
                 Type = "notify";
                 ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${builtins.toString cfg.table}";
               };
