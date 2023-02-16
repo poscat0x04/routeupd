@@ -1,36 +1,37 @@
-mod parser;
-mod cli;
-mod url;
-
-use std::time::Duration;
 use std::env;
 use std::future::ready;
+use std::time::Duration;
 
-use anyhow::{Result, Context, bail};
+use anyhow::{bail, Context, Result};
+use argh::from_env;
 use capctl::caps::{Cap, CapState};
-use futures_util::stream::iter;
 use futures_util::{StreamExt, TryStreamExt};
+use futures_util::stream::iter;
 use ipnet::{Ipv4Net, Ipv6Net};
 use parse_duration::parse::parse;
 use reqwest::{Client, ClientBuilder, Url};
-use rtnetlink::{new_connection, Handle};
+use rtnetlink::{Handle, new_connection};
 use rtnetlink::IpVersion::{V4, V6};
 use systemd::daemon::notify;
 use tokio::time::sleep;
 
-use cli::{Arg, Parser};
-use parser::read_lines;
+use crate::cli::Args;
+use crate::parser::read_lines;
 use crate::url::parse_url;
+
+mod parser;
+mod cli;
+mod url;
 
 const UPDATE_INTERVAL_DEFAULT: Duration = Duration::from_secs(24 * 60 * 60);
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // parse arguments
-    let arg = Arg::parse();
+    let args: Args = from_env();
 
     // parse interval string, if supplied
-    let update_interval = match &arg.interval {
+    let update_interval = match &args.interval {
         Some(i) => parse(i).with_context(|| format!("Failed to parse interval \"{}\"", i))?,
         None => UPDATE_INTERVAL_DEFAULT,
     };
@@ -54,14 +55,14 @@ async fn main() -> Result<()> {
     let interface =
         handle.link()
             .get()
-            .match_name(arg.interface.clone())
+            .match_name(args.interface.clone())
             .execute()
             .try_next().await
             .with_context(||
-                format!("Failed to get the id of the interface with the name {}", arg.interface)
+                format!("Failed to get the id of the interface with the name {}", args.interface)
             )?
             .with_context(||
-                format!("No interface with the name {} was found", arg.interface)
+                format!("No interface with the name {} was found", args.interface)
             )?;
     let if_id = interface.header.index;
 
@@ -74,20 +75,20 @@ async fn main() -> Result<()> {
             .build()
             .context("Failed to build reqwest client")?;
 
-    let v4_url = parse_url(&arg.v4_url).context("Failed to parse URL")?;
-    let v6_url = parse_url(&arg.v6_url).context("Failed to parse URL")?;
+    let v4_url = parse_url(&args.v4_url).context("Failed to parse URL")?;
+    let v6_url = parse_url(&args.v6_url).context("Failed to parse URL")?;
 
     update_routes(
-        &client, &handle, &arg,
+        &client, &handle, &args,
         if_id, &v4_url, &v6_url,
     ).await?;
     try_notify_systemd()?;
 
-    if arg.daemon {
+    if args.daemon {
         loop {
             sleep(update_interval).await;
             update_routes(
-                &client, &handle, &arg,
+                &client, &handle, &args,
                 if_id, &v4_url, &v6_url,
             ).await?
         }
@@ -99,7 +100,7 @@ async fn main() -> Result<()> {
 async fn update_routes(
     client: &Client,
     handle: &Handle,
-    arg: &Arg,
+    arg: &Args,
     if_id: u32,
     v4_url: &Url,
     v6_url: &Url,
@@ -130,7 +131,7 @@ async fn update_routes(
     // delete existing routes
     routes.try_for_each_concurrent(
         10,
-        |r| handle.route().del(r).execute()
+        |r| handle.route().del(r).execute(),
     ).await.context("Failed to delete route")?;
 
     let mut v4_count = 0u64;
@@ -149,7 +150,7 @@ async fn update_routes(
                     .output_interface(if_id)
                     .destination_prefix(n.addr(), n.prefix_len())
                     .execute()
-            }
+            },
         ).await
         .context("Failed to add route")?;
 
@@ -179,7 +180,7 @@ async fn update_routes(
         // delete existing routes
         routes.try_for_each_concurrent(
             10,
-            |r| handle.route().del(r).execute()
+            |r| handle.route().del(r).execute(),
         ).await.context("Failed to delete route")?;
 
         let mut v6_count = 0u64;
@@ -198,7 +199,7 @@ async fn update_routes(
                         .output_interface(if_id)
                         .destination_prefix(n.addr(), n.prefix_len())
                         .execute()
-                }
+                },
             ).await
             .context("Failed to add route")?;
 

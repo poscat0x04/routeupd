@@ -9,6 +9,7 @@ ipnet = "2.7"
 url = "2.3"
 capctl = "0.2"
 parse_duration = "2.1"
+argh = "0.1"
 futures-util = "0.3"
 anyhow = "1.0"
 
@@ -19,10 +20,6 @@ default-features = false
 [dependencies.reqwest]
 version = "0.11"
 features = [ "gzip" ]
-
-[dependencies.clap]
-version = "4.0"
-features = [ "derive" ]
 
 [dependencies.tokio]
 version = "1.23"
