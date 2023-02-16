@@ -3,23 +3,30 @@ name = "routeupd"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-rtnetlink = "0.11"
+rtnetlink = "0.12"
 ipnet = "2.7"
-reqwest.version = "0.11"
-reqwest.features = [ "gzip" ]
-url = "2.3.1"
-systemd = "0.10.0"
+url = "2.3"
 capctl = "0.2"
 parse_duration = "2.1"
-futures-util = "0.3.25"
+futures-util = "0.3"
 anyhow = "1.0"
-clap.version = "4.0"
-clap.features = [ "derive" ]
-tokio.version = "1.23"
-tokio.features = [ "time", "macros", "rt-multi-thread" ]
+
+[dependencies.systemd]
+version = "0.10"
+default-features = false
+
+[dependencies.reqwest]
+version = "0.11"
+features = [ "gzip" ]
+
+[dependencies.clap]
+version = "4.0"
+features = [ "derive" ]
+
+[dependencies.tokio]
+version = "1.23"
+features = [ "time", "macros", "rt-multi-thread" ]
 
 [profile.dev]
 opt-level = 1
