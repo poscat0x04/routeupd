@@ -24,10 +24,7 @@ mod periodic;
 #[tokio::main]
 async fn main() -> Result<()> {
     // initialization
-    // parse arguments
     let args: Args = from_env();
-
-    // parse interval string, if supplied
     let update_interval = Duration::from_secs((&args.interval * 3600) as u64);
 
     // check if this program have enough privilege
