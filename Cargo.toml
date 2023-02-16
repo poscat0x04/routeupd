@@ -1,7 +1,17 @@
 [package]
 name = "routeupd"
+description = "Routing table updating tool"
 version = "0.1.0"
 edition = "2021"
+authors = ["poscat <poscat@poscat.moe>"]
+
+repository = "https://github.com/poscat0x04/routeupd"
+
+readme = "README.md"
+license = "BSD-3"
+
+keywords = ["networking", "routing"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 rtnetlink = "0.12"
