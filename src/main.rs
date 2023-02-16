@@ -7,10 +7,10 @@ use futures_util::TryStreamExt;
 use reqwest::ClientBuilder;
 use rtnetlink::new_connection;
 use tokio::task;
-use tokio::time::sleep;
 
 use crate::cli::Args;
 use crate::notify::try_notify_systemd;
+use crate::periodic::run_periodically;
 use crate::update::update_routes;
 use crate::url::parse_url;
 
@@ -19,6 +19,7 @@ mod cli;
 mod url;
 mod notify;
 mod update;
+mod periodic;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -72,20 +73,13 @@ async fn main() -> Result<()> {
     let v6_url = parse_url(&args.v6_url).context("Failed to parse URL")?;
     // initialization complete
 
-    update_routes(
-        &client, &handle, &args,
-        if_id, &v4_url, &v6_url,
-    ).await?;
-    try_notify_systemd()?;
+    update_routes(&client, &handle, &args, if_id, &v4_url, &v6_url).await?;
 
     if args.daemon {
-        loop {
-            sleep(update_interval).await;
-            update_routes(
-                &client, &handle, &args,
-                if_id, &v4_url, &v6_url,
-            ).await?
-        }
+        try_notify_systemd()?;
+        run_periodically(update_interval, ||
+            update_routes(&client, &handle, &args, if_id, &v4_url, &v6_url),
+        ).await?;
     }
 
     Ok(())
