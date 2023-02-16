@@ -20,9 +20,9 @@ pub struct Args {
     /// whether to start routeupd in daemon mode
     #[argh(switch, short = 'd', long = "daemon")]
     pub daemon: bool,
-    /// the interval between update, defaults to 1 day, uses systemd.time(7) syntax
-    #[argh(option, long = "interval")]
-    pub interval: Option<String>,
+    /// the interval between update in hours, defaults to 24 (1day)
+    #[argh(option, long = "interval", default = "24")]
+    pub interval: u16,
     /// the output interface of the routes
     #[argh(option, short = 'i', long = "interface")]
     pub interface: String,

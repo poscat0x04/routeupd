@@ -8,7 +8,6 @@ use capctl::caps::{Cap, CapState};
 use futures_util::{StreamExt, TryStreamExt};
 use futures_util::stream::iter;
 use ipnet::{Ipv4Net, Ipv6Net};
-use parse_duration::parse::parse;
 use reqwest::{Client, ClientBuilder, Url};
 use rtnetlink::{Handle, new_connection};
 use rtnetlink::IpVersion::{V4, V6};
@@ -23,26 +22,21 @@ mod parser;
 mod cli;
 mod url;
 
-const UPDATE_INTERVAL_DEFAULT: Duration = Duration::from_secs(24 * 60 * 60);
-
 #[tokio::main]
 async fn main() -> Result<()> {
     // parse arguments
     let args: Args = from_env();
 
     // parse interval string, if supplied
-    let update_interval = match &args.interval {
-        Some(i) => parse(i).with_context(|| format!("Failed to parse interval \"{}\"", i))?,
-        None => UPDATE_INTERVAL_DEFAULT,
-    };
+    let update_interval = Duration::from_secs((&args.interval * 3600) as u64);
 
     // check if this program have enough privilege
     let init_cap_state = CapState::get_current().context("Failed to get process capabilities")?;
     if !init_cap_state.permitted.has(Cap::NET_ADMIN) {
         eprintln!("routeupd needs CAP_NET_ADMIN to use rtnetlink to modify routing tables!");
         eprintln!("consider running this program as root or setting CAP_NET_ADMIN");
-        eprintln!("");
-        bail!("Not engough privilege")
+        eprintln!();
+        bail!("Not enough privilege")
     }
 
     // establish netlink connection
