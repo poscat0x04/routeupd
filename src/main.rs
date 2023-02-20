@@ -7,6 +7,7 @@ use futures_util::TryStreamExt;
 use reqwest::ClientBuilder;
 use rtnetlink::new_connection;
 use tokio::task;
+use tokio::time::sleep;
 
 use crate::cli::Args;
 use crate::notify::try_notify_systemd;
@@ -74,9 +75,14 @@ async fn main() -> Result<()> {
 
     if args.daemon {
         try_notify_systemd()?;
-        run_periodically(update_interval, ||
-            update_routes(&client, &handle, &args, if_id, &v4_url, &v6_url),
-        ).await?;
+        println!("going into sleep for {update_interval:?}");
+        sleep(update_interval).await;
+
+        run_periodically(update_interval, || async {
+            let r = update_routes(&client, &handle, &args, if_id, &v4_url, &v6_url).await;
+            println!("going into sleep for {update_interval:?}");
+            r
+        }).await?;
     }
 
     Ok(())
