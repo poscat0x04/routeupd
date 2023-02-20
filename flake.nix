@@ -36,6 +36,11 @@
             table = mkOption {
               type = types.int;
             };
+
+            calendar = mkOption {
+              type = types.str;
+              default = "*-*-* 04:00:00";
+            };
           };
 
           config = lib.mkIf cfg.enable {
@@ -60,10 +65,19 @@
                 ProtectProc = "noaccess";
                 RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" "AF_NETLINK" ];
                 RestrictNamespaces = true;
-                Restart = "always";
+                Restart = "on-failure";
                 RestartSec = "3s";
-                Type = "notify";
-                ExecStart = "${pkgs.routeupd}/bin/routeupd --daemon --interface ${cfg.interface} --table ${builtins.toString cfg.table}";
+                Type = "oneshot";
+                ExecStart = "${pkgs.routeupd}/bin/routeupd --interface ${cfg.interface} --table ${builtins.toString cfg.table}";
+              };
+            };
+            systemd.timers.routeupd = {
+              wantedBy = [ "multi-user.target" ];
+              timerConfig = {
+                OnCalendar = cfg.calendar;
+                Persistent = true;
+                AccuracySec = "1h";
+                Unit = "routeupd.service";
               };
             };
           };
