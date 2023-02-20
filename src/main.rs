@@ -25,7 +25,7 @@ mod periodic;
 async fn main() -> Result<()> {
     // initialization
     let args: Args = from_env();
-    let update_interval = Duration::from_secs((&args.interval * 3600) as u64);
+    let update_interval = Duration::from_secs((args.interval as u64) * 3600);
 
     // check if this program have enough privilege
     let init_cap_state = CapState::get_current().context("Failed to get process capabilities")?;
