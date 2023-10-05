@@ -14,9 +14,9 @@ keywords = ["networking", "routing"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-rtnetlink = "0.12"
-ipnet = "2.7"
-url = "2.3"
+rtnetlink = "0.13"
+ipnet = "2.8"
+url = "2.4"
 capctl = "0.2"
 argh = "0.1"
 futures-util = "0.3"
@@ -31,7 +31,7 @@ version = "0.11"
 features = [ "gzip" ]
 
 [dependencies.tokio]
-version = "1.23"
+version = "1.32"
 features = [ "time", "macros", "rt-multi-thread" ]
 
 [profile.dev]
