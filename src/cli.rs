@@ -7,11 +7,11 @@ const V6_DEFAULT_URL: &str = "https://raw.githubusercontent.com/fernvenue/chn-ci
 /// Routing table updating tool
 pub struct Args {
     /// URL to the IPv4 CIDR list.
-    /// Default: https://raw.githubusercontent.com/misakaio/chnroutes2/master/chnroutes.txt
+    /// Default: <https://raw.githubusercontent.com/misakaio/chnroutes2/master/chnroutes.txt>
     #[argh(option, short = '4', long = "v4-url", default = "String::from(V4_DEFAULT_URL)")]
     pub v4_url: String,
     /// URL to the IPv6 CIDR list
-    /// Default: https://raw.githubusercontent.com/fernvenue/chn-cidr-list/master/ipv6.txt
+    /// Default: <https://raw.githubusercontent.com/fernvenue/chn-cidr-list/master/ipv6.txt>
     #[argh(option, short = '6', long = "v6-url", default = "String::from(V6_DEFAULT_URL)")]
     pub v6_url: String,
     /// whether to add IPv6 routes
