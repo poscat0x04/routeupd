@@ -1,8 +1,8 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
-    flake-utils.url = "github:poscat0x04/flake-utils";
-    nix-filter.url = "github:numtide/nix-filter";
+    nixpkgs.url = "git+ssh://git@github.com/NixOS/nixpkgs?ref=nixos-24.05&shallow=1";
+    flake-utils.url = "git+ssh://git@github.com/poscat0x04/flake-utils?shallow=1";
+    nix-filter.url = "git+ssh://git@github.com/numtide/nix-filter?shallow=1";
   };
 
   outputs =

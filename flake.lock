@@ -4,46 +4,49 @@
       "locked": {
         "lastModified": 1607173379,
         "narHash": "sha256-wKwwwbdvYtm0bY6PaeCWO3k0+Bg+VohC56Vn7Z9ZX/U=",
-        "owner": "poscat0x04",
-        "repo": "flake-utils",
+        "ref": "refs/heads/master",
         "rev": "1841839284bd33948154ccdf73f8712a01bfab64",
-        "type": "github"
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/poscat0x04/flake-utils"
       },
       "original": {
-        "owner": "poscat0x04",
-        "repo": "flake-utils",
-        "type": "github"
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/poscat0x04/flake-utils"
       }
     },
     "nix-filter": {
       "locked": {
-        "lastModified": 1694857738,
-        "narHash": "sha256-bxxNyLHjhu0N8T3REINXQ2ZkJco0ABFPn6PIe2QUfqo=",
-        "owner": "numtide",
-        "repo": "nix-filter",
-        "rev": "41fd48e00c22b4ced525af521ead8792402de0ea",
-        "type": "github"
+        "lastModified": 1710156097,
+        "narHash": "sha256-1Wvk8UP7PXdf8bCCaEoMnOT1qe5/Duqgj+rL8sRQsSM=",
+        "ref": "refs/heads/main",
+        "rev": "3342559a24e85fc164b295c3444e8a139924675b",
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/numtide/nix-filter"
       },
       "original": {
-        "owner": "numtide",
-        "repo": "nix-filter",
-        "type": "github"
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/numtide/nix-filter"
       }
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1700097215,
-        "narHash": "sha256-ODQ3gBTv1iHd7lG21H+ErVISB5wVeOhd/dEogOqHs/I=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "9fb122519e9cd465d532f736a98c1e1eb541ef6f",
-        "type": "github"
+        "lastModified": 1725407940,
+        "narHash": "sha256-tiN5Rlg/jiY0tyky+soJZoRzLKbPyIdlQ77xVgREDNM=",
+        "ref": "nixos-24.05",
+        "rev": "6f6c45b5134a8ee2e465164811e451dcb5ad86e3",
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/NixOS/nixpkgs"
       },
       "original": {
-        "owner": "NixOS",
-        "ref": "nixos-23.05",
-        "repo": "nixpkgs",
-        "type": "github"
+        "ref": "nixos-24.05",
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/NixOS/nixpkgs"
       }
     },
     "root": {
